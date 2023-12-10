@@ -1,0 +1,102 @@
+@page "/ToDoList"
+@inject HttpClient _httpClient;
+<h3>To Do List</h3>
+
+
+<table class="table">
+    <thead>
+    <tr>
+        <th>Id</th>
+        <th>Name</th>
+    </tr>
+    </thead>
+    <tbody>
+    @if (tasks != null)
+    {
+        foreach (var task in tasks)
+        {
+            <tr>
+                <td>@task.Id</td>
+                    
+                <td>@task.Name</td>
+            </tr>
+        }
+    }
+    else
+    {
+        <tr>
+            <td colspan="2">Brak danych</td>
+        </tr>
+    }
+    </tbody>
+</table>
+
+<form @onsubmit="SubmitText">
+    <label>
+        New task:
+        <input type="text" @bind="text" />
+    </label>
+    <button type="submit">Add</button>
+</form>
+
+<form @onsubmit="DeleteTask">
+    <label>
+        Delete task by Id:
+        <input type="number" @bind="id" />
+    </label>
+    <button type="submit">Delete</button>
+</form>
+
+@code {
+    private IEnumerable<work> tasks = new List<work>();
+    private string text = "";
+    private int id;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            tasks = await _httpClient.GetFromJsonAsync<IEnumerable<work>>("api/Task");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Wystąpił błąd: {ex.Message}");
+        }
+    }
+    
+    private async Task SubmitText()
+    {
+        try
+        {
+            var response = await _httpClient.PostAsJsonAsync("Create", text);
+
+            response.EnsureSuccessStatusCode();
+
+            await OnInitializedAsync();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Wystąpił błąd: {ex.Message}");
+        }
+    }
+
+    private async Task DeleteTask()
+    {
+        try
+        {
+            var result = await _httpClient.DeleteAsync($"Delete/{id}");
+            await OnInitializedAsync();
+        }
+        catch (Exception)
+        {}
+
+
+    }
+
+
+    public class work
+    {
+        public int Id { get; set; }
+        public string Name { get; set; }
+    }
+}
